@@ -2,6 +2,7 @@ import * as React from 'react';
 // import styles from './CrudOperation.module.scss';
 import type { ICrudOperationProps } from './ICrudOperationProps';
 import {getSP,SPFI} from '../pnpConfig';
+import { DefaultButton, DetailsList, Dialog, DialogFooter, DialogType, Icon, IconButton, PrimaryButton, SelectionMode, TextField } from '@fluentui/react';
 //type defination
 interface IQuotesRes{
   Title:string;
@@ -74,4 +75,160 @@ const addNewListItem=async()=>{
     setIAddHidden(true);
   }
 }
+
+//open Dialog
+const openEditDialog=(id:number)=>{
+  setCurrentId(id);
+  //this function would open
+  setIsEditHidden(false);
+  const quote:IQuotesState|undefined=quotes.find((each:any)=>each.id===id);
+  if(quote){
+    setNewAuthor(quote.author);
+    setEditQuote(quote.quote);
+  }
 }
+const handleQuoteChange=(event:React.ChangeEvent<HTMLInputElement>)=>{
+  setEditQuote(event.target.value);
+}
+const handleAuthorChange=(event:React.ChangeEvent<HTMLInputElement>)=>{
+  seteditAuthor(event.target.value);
+}
+//Edit Item
+const editListItem=async()=>{
+  //get list
+  const List=_sp.web.lists.getbytitle('Quotes');
+  try{
+    await List.items.getById(currentId).update({
+Title:editQuote,
+Author:editedAuthor
+    });
+    setIsEditHidden(true);
+    setReload(!reload);
+    console.log('List item is updated');
+  }
+  catch(err){
+    console.log(err);
+  }
+  finally{
+    setIsEditHidden(true);
+  }
+}
+//delte item
+const deleteListItem=async(id:number)=>{
+  const list=_sp.web.lists.getbytitle('Quotes');
+  try{
+    await list.items.getById(id).delete();
+    setReload(!reload);
+    console.log('List item is deleted');
+  }
+  catch(err){
+    console.log(err);
+  }
+}
+return(
+  <>
+  <h1>Editable Table in the Spfx</h1>
+  <div className='quotebox'>
+    <h2>Quotes</h2>
+    <div className='container'>
+      <DetailsList
+      items={quotes||[]}
+      columns={[
+        {
+          key:'quoteColumn',
+          name:'Quote',
+          fieldName:'quote',
+          minWidth:200,
+          isResizable:true,
+          onRender:(item:IQuotesState)=><div>{item.quote}</div>
+        },
+        {
+          key:'authorColumn',
+          name:'Author',
+          fieldName:'author',
+          minWidth:200,
+          isResizable:true,
+          onRender:(item:IQuotesState)=><div>{item.author}</div>
+        },
+        {
+          key:'actionColumn',
+          name:'Actions',
+          minWidth:200,
+          isResizable:true,
+          onRender:(item:IQuotesState)=>(
+            <div>
+              <IconButton iconProps={{iconName:'edit'}}
+              
+              onClick={()=>openEditDialog(item.id)}
+              title='Edit'
+              aria-label='Edit'/>
+              <IconButton iconProps={{iconName:'delete'}}
+              onClick={()=>deleteListItem(item.id)}
+              title='Delete'
+              aria-label='Delete'
+              />
+                
+           </div>
+          )
+        }
+      ]}
+      selectionMode={SelectionMode.none}
+      />
+      <Dialog hidden={isEditHidden}
+      onDismiss={()=>setIsEditHidden(true)}
+      dialogContentProps={{
+        type:DialogType.normal,
+        title:'Edit Quote',
+      }}
+      >
+<div>
+  <TextField label='Quote'
+  value={editQuote}
+  onChange={handleQuoteChange}
+  />
+    <TextField label='Author'
+  // value={editQuote}
+  value={editedAuthor}
+  onChange={handleQuoteChange}
+  />
+</div>
+<DialogFooter >
+  <PrimaryButton text="Submit" onClick={()=>editListItem()}/>
+    <DefaultButton text="Cancel" onClick={()=>setIsEditHidden(true)}/>
+
+</DialogFooter>
+      </Dialog>
+
+    </div>
+  </div>
+  <div>
+    <PrimaryButton text ='Add New Quote' onClick={()=>setIAddHidden(false)}/>
+  </div>
+  <Dialog hidden={isAddHidden}
+    onDismiss={()=>setIAddHidden(true)}
+    dialogContentProps={{
+      type:DialogType.normal,
+      title:'Add New Quote'
+    }}
+    >
+      <div>
+      <TextField label='Quote'
+  value={newQuote
+  }
+  onChange={handleQuote}
+  />
+      <TextField label='Author'
+  value={newAuthor
+  }
+  onChange={handleAuthor}
+  />
+      </div>
+      <DialogFooter>
+      <PrimaryButton text="Submit" onClick={()=>addNewListItem()}/>
+      <DefaultButton text="Cancel" onClick={()=>setIAddHidden(true)}/>
+      </DialogFooter>
+  </Dialog>
+  </>
+)
+}
+export default CrudOperation;
